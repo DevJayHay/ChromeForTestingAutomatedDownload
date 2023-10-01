@@ -369,3 +369,5 @@ FodyWeavers.xsd
 # JetBrains Rider
 .idea/
 *.sln.DotSettings*
+
+.DS_Store
