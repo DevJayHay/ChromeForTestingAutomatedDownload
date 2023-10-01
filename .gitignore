@@ -362,3 +362,10 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /ChromeDriverAutomatedDownload/README.md
+
+# User-specific files
+*.cache
+.idea/*
+# JetBrains Rider
+.idea/
+*.sln.DotSettings*

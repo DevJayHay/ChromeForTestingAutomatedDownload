@@ -1,112 +1,81 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
-namespace ChromeForTestingAutomatedDownload
+namespace ChromeForTestingAutomatedDownload;
+
+public class LocalVersionChecking
 {
-    public static class LocalVersionChecking
-    {
-        public static async Task<LocalVersion> GetChromeVersion()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                string programFilesPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
-                string chromePath = Path.Combine(programFilesPath, "Google\\Chrome\\Application\\chrome.exe");
+	private static ILogger<LocalVersionChecking> _logger;
 
-                if (File.Exists(chromePath))
-                {
-                    var fileVersionInfo = FileVersionInfo.GetVersionInfo(chromePath);
+	public LocalVersionChecking(ILogger<LocalVersionChecking> logger)
+	{
+		_logger = logger ?? NullLogger<LocalVersionChecking>.Instance;
+	}
+	public static async Task<ChromeLocalVersion> GetChromeVersion()
+	{
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			return await GetChromeVersionWindowsAsync();
 
-                    if (!string.IsNullOrEmpty(fileVersionInfo.FileVersion))
-                    {
-                        return new LocalVersion(fileVersionInfo.FileVersion);
-                    }
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+			return await GetChromeVersionRunProcessAsync("google-chrome", "--product-version");
 
-                    else
-                    {
-                        throw new Exception("Unsupported Google Chrome configuration on this machine.");
-                    }
-                }
-                
-                else
-                {
-                    throw new Exception("Google Chrome not found on the machine.");
-                }
-            }
+		if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+			return await GetChromeVersionRunProcessAsync(
+				Path.Combine("/", "Applications", "Google Chrome.app", "Contents", "MacOS", "Google Chrome"),
+				"--version");
 
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                try
-                {
-                    using var process = Process.Start(
-                        new ProcessStartInfo
-                        {
-                            FileName = "google-chrome",
-                            ArgumentList = { "--product-version" },
-                            UseShellExecute = false,
-                            CreateNoWindow = true,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                        }
-                    );
+		throw new PlatformNotSupportedException("Your operating system is not supported.");
+	}
 
-                    string output = await (process?.StandardOutput ?? new StreamReader(new MemoryStream())).ReadToEndAsync() ?? string.Empty;
-                    string error = await (process?.StandardError ?? new StreamReader(new MemoryStream())).ReadToEndAsync() ?? string.Empty;
-                    await (process?.WaitForExitAsync() ?? new Task(() => { }));
-                    process?.Kill(true);
+	private static async Task<ChromeLocalVersion> GetChromeVersionWindowsAsync()
+	{
+		await Task.Yield();
+		var programFilesPath = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+		var chromePath = Path.Combine(programFilesPath, "Google", "Chrome", "Application", "chrome.exe");
 
-                    if (!string.IsNullOrEmpty(error))
-                    {
-                        throw new Exception(error);
-                    }
+		if (!File.Exists(chromePath))
+			return null; // or return a default version instance as per your design choice 
 
-                    return new LocalVersion(output);
-                }
-                
-                catch (Exception ex)
-                {
-                    throw new Exception("An error occurred trying to execute 'google-chrome --product-version'", ex);
-                }
-            }
+		var fileVersionInfo = FileVersionInfo.GetVersionInfo(chromePath);
+		return !string.IsNullOrEmpty(fileVersionInfo.FileVersion)
+			? new ChromeLocalVersion(fileVersionInfo.FileVersion)
+			: null; // or return a default version instance as per your design choice 
+	}
 
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                try
-                {
-                    using var process = Process.Start(
-                        new ProcessStartInfo
-                        {
-                            FileName = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                            ArgumentList = { "--version" },
-                            UseShellExecute = false,
-                            CreateNoWindow = true,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                        }
-                    );
-                    string output = await (process?.StandardOutput ?? new StreamReader(new MemoryStream())).ReadToEndAsync() ?? string.Empty;
-                    string error = await (process?.StandardError ?? new StreamReader(new MemoryStream())).ReadToEndAsync() ?? string.Empty;
-                    await (process?.WaitForExitAsync() ?? new Task(() => { }));
-                    process?.Kill(true);
+	private static async Task<ChromeLocalVersion> GetChromeVersionRunProcessAsync(string fileName, string arguments)
+	{
+		try
+		{
+			using var process = Process.Start(
+				new ProcessStartInfo
+				{
+					FileName = fileName,
+					ArgumentList = { arguments },
+					UseShellExecute = false,
+					CreateNoWindow = true,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true
+				}
+			);
 
-                    if (!string.IsNullOrEmpty(error))
-                    {
-                        throw new Exception(error);
-                    }
+			var output = await (process?.StandardOutput ?? new StreamReader(new MemoryStream())).ReadToEndAsync();
+			var error = await (process?.StandardError ?? new StreamReader(new MemoryStream())).ReadToEndAsync();
+			await (process?.WaitForExitAsync() ?? new Task(() => { }));
 
-                    output = output.Replace("Google Chrome ", "");
-                    return new LocalVersion(output);
-                }
-                
-                catch (Exception ex)
-                {
-                    throw new Exception($"An error occurred trying to execute '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome --version'", ex);
-                }
-            }
+			if (!string.IsNullOrEmpty(error))
+			{
+				output = output.Replace("Google Chrome ", "");
+			}
 
-            else
-            {
-                throw new PlatformNotSupportedException("Your operating system is not supported.");
-            }
-        }
-    }
+			return new ChromeLocalVersion(output);
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Error {eMessage}", ex.Message);
+			
+			return null; // or return a default version instance as per your design choice 
+		}
+	}
 }

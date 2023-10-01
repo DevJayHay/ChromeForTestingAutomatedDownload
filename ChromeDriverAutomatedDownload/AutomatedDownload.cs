@@ -1,52 +1,89 @@
 ﻿using System.IO.Compression;
+using Microsoft.Extensions.Logging;
 
 namespace ChromeForTestingAutomatedDownload
 {
-    public static class AutomatedDownload
-    {
-        public static async Task DownloadChromeDriver(string downloadPath = "")
-        {
-            if (string.IsNullOrWhiteSpace(downloadPath)) downloadPath = AppDomain.CurrentDomain.BaseDirectory;
+	public class AutomatedDownload
+	{
+		private readonly IChromeVersionModelFactory _factory;
+		private readonly ILogger<AutomatedDownload> _logger;
 
-            var localMajorRelease = (await LocalVersionChecking.GetChromeVersion()).MajorReleaseNumber;
+		public AutomatedDownload(IChromeVersionModelFactory factory, ILogger<AutomatedDownload> logger)
+		{
+			_factory = factory;
+			_logger = logger;
+		}
 
-            var model = await ChromeVersionModelFactory.CreateChromeVersionModelAsync<LatestVersionsPerMilestoneWithDownload.ChromeVersionModel>();
+		public async Task DownloadChromeDriver(string downloadPath = "")
+		{
+			if (string.IsNullOrWhiteSpace(downloadPath))
+			{
+				downloadPath = AppDomain.CurrentDomain.BaseDirectory;
+			}
 
-            var url = await model.GetMostRecentAssetURLByMajorReleaseNumberAsync(Binary.ChromeDriver, Platform.Win64, localMajorRelease);
+			var localVersion = await LocalVersionChecking.GetChromeVersion();
+			if (localVersion != null)
+			{
+				var localMajorRelease = localVersion.MajorReleaseNumber;
 
-            using var httpClient = new HttpClient();
-            
-            try
-            {
-                var response = await httpClient.GetAsync(url);
+				var model = await _factory
+					.CreateInstanceAsync<LatestVersionsPerMilestoneWithDownload.ChromeVersionModel>();
 
-                if (response.IsSuccessStatusCode)
-                {
-                    using var stream = await response.Content.ReadAsStreamAsync();
-                    
-                    using var fileStream = File.Create(Path.Combine(downloadPath, Path.GetFileName(url) ?? string.Empty));
-                        
-                    await stream.CopyToAsync(fileStream);
+				var url = await model.GetMostRecentAssetURLByMajorReleaseNumberAsync(Binary.ChromeDriver,
+					Platform.Win64, localMajorRelease);
 
-                    using ZipArchive archive = new ZipArchive(fileStream);
+				using var httpClient = new HttpClient();
 
-                    var driver = archive.Entries.Where(x => x.FullName.Contains("chromedriver.exe")).First();
+				try
+				{
+					var response = await httpClient.GetAsync(url);
 
-                    await Task.Run(() => driver.ExtractToFile(Path.Combine(downloadPath, "chromedriver.exe"), true));
+					if (response.IsSuccessStatusCode)
+					{
+						await DownloadFile(response, downloadPath);
+					}
+					else
+					{
+						Console.WriteLine($"Failed to download file. Status code: {response.StatusCode}");
+					}
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine($"An error occurred: {ex.Message}");
+				}
+			}
+		}
 
-                    Console.WriteLine("File downloaded successfully!");
-                }
+		private async Task DownloadFile(HttpResponseMessage response, string downloadPath)
+		{
+			await using var stream = await response.Content.ReadAsStreamAsync();
+			var fileName = Path.GetFileName(response.RequestMessage?.RequestUri?.ToString()) ?? string.Empty;
+			await using var fileStream = File.Create(Path.Combine(downloadPath, fileName));
 
-                else
-                {
-                    Console.WriteLine($"Failed to download file. Status code: {response.StatusCode}");
-                }
-            }
+			await stream.CopyToAsync(fileStream);
 
-            catch (Exception ex)
-            {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-            }
-        }
-    }
+			fileStream.Position = 0; // Reset the position to the beginning as it's needed by ZipArchive
+
+			await UnzipAndExtractDriver(fileStream, downloadPath);
+
+			Console.WriteLine("File downloaded successfully!");
+		}
+
+		private async Task UnzipAndExtractDriver(Stream fileStream, string downloadPath)
+		{
+			using var archive = new ZipArchive(fileStream);
+			const string driverFileName = "chromedriver.exe";
+
+			var driver = archive.Entries.FirstOrDefault(x => x.FullName.Contains(driverFileName));
+
+			if (driver != null)
+			{
+				await Task.Run(() => driver.ExtractToFile(Path.Combine(downloadPath, driverFileName), true));
+			}
+			else
+			{
+				throw new Exception($"{driverFileName} not found in the downloaded archive.");
+			}
+		}
+	}
 }

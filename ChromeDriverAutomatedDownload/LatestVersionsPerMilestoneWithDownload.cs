@@ -1,71 +1,69 @@
 ﻿using System.Text.Json.Serialization;
+using ChromeForTestingAutomatedDownload.DTOs;
+using Microsoft.Extensions.Logging;
 
 namespace ChromeForTestingAutomatedDownload
 {
-    public class LatestVersionsPerMilestoneWithDownload
-    {
-        public class ChromeVersionModel : IChromeVersionModel, IDownload
-        {
-            public Func<Task<string>> QueryEndpointAsync { get; set; } = GoogleChromeLabsEndpointQueries.GetLatestVersionsPerMilestoneWithDownloadAsync;
+	public class LatestVersionsPerMilestoneWithDownload
+	{
+		public class ChromeVersionModel : IChromeVersionModel, IDownload, IVersion, IDownloadByMajorRelease,
+			IDownloadByFullVersion
+		{
+			private readonly AssetList _assetList;
+			private readonly ILogger<ChromeVersionModel> _logger;
 
-            public Dictionary<string, IVersionObject> GetVersionObject()
-            {
-                return Milestones.ToDictionary(x => x.Key, x => (IVersionObject)x.Value);
-            }
+			public ChromeVersionModel(AssetList assetList, ILogger<ChromeVersionModel> logger)
+			{
+				_assetList = assetList;
+				_logger = logger;
+			}
 
-            public async Task<string?> GetMostRecentAssetURLAsync(Binary binary, Platform platform)
-            {
-                var platformList = await AssetList.GetAssetListAsync<ChromeVersionModel>(binary, platform);
+			[JsonPropertyName("milestones")]
+			public Dictionary<string, Milestones> Milestones { get; set; } = new Dictionary<string, Milestones>();
 
-                return platformList?
-                    .OrderByDescending(x => x.Key)
-                    .FirstOrDefault()
-                    .Value;
-            }
+			[JsonPropertyName("timestamp")]
+			public DateTime TimeStamp { get; set; }
 
-            public async Task<string?> GetMostRecentAssetURLByMajorReleaseNumberAsync(Binary binary, Platform platform, int majorReleaseNumber)
-            {
-                var platformList = await AssetList.GetAssetListAsync<ChromeVersionModel>(binary, platform);
+			public Func<Task<string>> QueryEndpointAsync { get; set; } = GoogleChromeLabsEndpointQueries
+				.GetLatestVersionsPerMilestoneWithDownloadAsync;
 
-                if (platformList == null) return null;
 
-                return platformList?
-                    .OrderByDescending(x => x.Key)
-                    .Where(x => x.Key.Split('.')[0].Equals(majorReleaseNumber.ToString()))
-                    .FirstOrDefault()
-                    .Value;
-            }
+			public async Task<string> GetMostRecentAssetURLAsync(Binary binary, Platform platform)
+			{
+				var platformList = await GetPlatformListAsync(binary, platform);
 
-            public async Task<string?> GetAssetURLByFullVersionNumberAsync(Binary binary, Platform platform, string fullVersionNumber)
-            {
-                var platformList = await AssetList.GetAssetListAsync<ChromeVersionModel>(binary, platform);
+				return platformList?.OrderByDescending(x => x.Key)
+					.FirstOrDefault().Value;
+			}
 
-                return platformList?
-                    .Where(x => x.Key.Equals(fullVersionNumber))
-                    .FirstOrDefault()
-                    .Value;
-            }
+			public async Task<string> GetAssetURLByFullVersionNumberAsync(Binary binary, Platform platform,
+				string fullVersionNumber)
+			{
+				var platformList = await GetPlatformListAsync(binary, platform);
 
-            [JsonPropertyName("timestamp")]
-            public DateTime TimeStamp { get; set; }
+				return platformList?
+					.FirstOrDefault(x =>
+						x.Key.Equals(fullVersionNumber, StringComparison.InvariantCultureIgnoreCase)).Value;
+			}
 
-            [JsonPropertyName("milestones")]
-            public Dictionary<string, Milestones> Milestones { get; set; } = new Dictionary<string, Milestones>();
-        }
+			public async Task<string> GetMostRecentAssetURLByMajorReleaseNumberAsync(Binary binary,
+				Platform platform, int majorReleaseNumber)
+			{
+				var platformList = await GetPlatformListAsync(binary, platform);
 
-        public class Milestones : IVersionObject
-        {
-            [JsonPropertyName("milestone")]
-            public string Channel { get; set; } = string.Empty;
+				return platformList?.OrderByDescending(x => x.Key)
+					.FirstOrDefault(x => x.Key.Split('.')[0].Equals(majorReleaseNumber.ToString())).Value;
+			}
 
-            [JsonPropertyName("version")]
-            public string Version { get; set; } = string.Empty;
+			public Dictionary<string, IVersionObject> GetVersionObject()
+			{
+				return Milestones.ToDictionary(x => x.Key, x => (IVersionObject)x.Value);
+			}
 
-            [JsonPropertyName("revision")]
-            public string Revision { get; set; } = string.Empty;
-
-            [JsonPropertyName("downloads")]
-            public DownloadMetaData Downloads { get; set; } = new DownloadMetaData();
-        }
-    }
+			private async Task<Dictionary<string, string>> GetPlatformListAsync(Binary binary, Platform platform)
+			{
+				return await _assetList.GetAssetListAsync<ChromeVersionModel>(binary, platform);
+			}
+		}
+	}
 }

@@ -1,54 +1,56 @@
-﻿namespace ChromeForTestingAutomatedDownload
+﻿#nullable enable
+using ChromeForTestingAutomatedDownload.DTOs;
+using Microsoft.Extensions.Logging;
+
+namespace ChromeForTestingAutomatedDownload
 {
-    public static class AssetList
-    {
-        public static async Task<Dictionary<string, string>?> GetAssetListAsync<T>(Binary _binary, Platform _platform) 
-            where T : IChromeVersionModel, IDownload, new()
-        {
-            string platform = PlatformString.GetPlatformString(_platform) ?? string.Empty;
+	public class AssetList
+	{
+		private readonly IChromeVersionModelFactory _factory;
+		private readonly IVersion _version;
+		private readonly ILogger<AssetList> _logger;
 
-            var model = await ChromeVersionModelFactory.CreateChromeVersionModelAsync<T>();
 
-            var versionObject = model.GetVersionObject().Values;
+		public AssetList(IChromeVersionModelFactory factory, IVersion version, ILogger<AssetList> logger)
+		{
+			_factory = factory;
+			_version = version;
+			_logger = logger;
 
-            switch (_binary)
-            {
-                case Binary.Chrome:
-                    return versionObject
-                        .ToDictionary(
-                            x => x.Version,
-                            x => x.Downloads.Chrome
-                                .Where(x => (x.Platform ?? string.Empty).Equals(platform))
-                                .Select(x => x.Url)
-                                .FirstOrDefault()
-                        )
-                        .Where(x => string.IsNullOrEmpty(x.Value) == false)
-                        .ToDictionary(x => x.Key ?? string.Empty, x => x.Value ?? string.Empty);
-                case Binary.ChromeDriver:
-                    return versionObject
-                        .ToDictionary(
-                            x => x.Version,
-                            x => x.Downloads.ChromeDriver
-                                .Where(x => (x.Platform ?? string.Empty).Equals(platform))
-                                .Select(x => x.Url)
-                                .FirstOrDefault()
-                        )
-                        .Where(x => string.IsNullOrEmpty(x.Value) == false)
-                        .ToDictionary(x => x.Key ?? string.Empty, x => x.Value ?? string.Empty);
-                case Binary.ChromeHeadlessShell:
-                    return versionObject
-                        .ToDictionary(
-                            x => x.Version,
-                            x => x.Downloads.ChromeHeadlessShell
-                                .Where(x => (x.Platform ?? string.Empty).Equals(platform))
-                                .Select(x => x.Url)
-                                .FirstOrDefault()
-                        )
-                        .Where(x => string.IsNullOrEmpty(x.Value) == false)
-                        .ToDictionary(x => x.Key ?? string.Empty, x => x.Value ?? string.Empty);
-                default:
-                    return null;
-            }
-        }
-    }
+		}
+
+		public async Task<Dictionary<string, string>> GetAssetListAsync<T>(Binary _binary, Platform _platform)
+			where T : IChromeVersionModel, IDownload
+		{
+			var platform = PlatformString.GetPlatformString(_platform) ?? string.Empty;
+
+			await _factory.CreateInstanceAsync<T>();
+
+			var versionObject = _version.GetVersionObject().Values;
+
+			return _binary switch
+			{
+				Binary.Chrome => GetByVersion(versionObject, platform, x => x.Downloads.Chrome),
+				Binary.ChromeDriver => GetByVersion(versionObject, platform, x => x.Downloads.ChromeDriver),
+				Binary.ChromeHeadlessShell => GetByVersion(versionObject, platform,
+					x => x.Downloads.ChromeHeadlessShell),
+				_ => null
+			} ?? throw new InvalidOperationException();
+		}
+
+		private static Dictionary<string, string> GetByVersion(
+			IEnumerable<IVersionObject> versionObject,
+			string platform,
+			Func<IVersionObject, IEnumerable<PlatformMetaData>> selectFunc)
+		{
+			return versionObject
+				.ToDictionary(x => x.Version,
+					x => selectFunc(x).Where(platformMetaData =>
+							(platformMetaData.Platform ?? string.Empty).Equals(platform))
+						.Select(platformMetaData => platformMetaData.Url)
+						.FirstOrDefault())
+				.Where(x => string.IsNullOrEmpty(x.Value) == false)
+				.ToDictionary(x => x.Key, x => x.Value ?? string.Empty);
+		}
+	}
 }

@@ -1,15 +1,15 @@
-﻿using System.Text.Json.Serialization;
+﻿using ChromeForTestingAutomatedDownload.DTOs;
 
 namespace ChromeForTestingAutomatedDownload
 {
-    public interface IVersionObject
-    {
-        public string Channel { get; set; }
+	public interface IVersionObject
+	{
+		public string Channel { get; set; }
 
-        public string Version { get; set; }
+		public DownloadMetaData Downloads { get; set; }
 
-        public string Revision { get; set; }
+		public string Revision { get; set; }
 
-        public DownloadMetaData Downloads { get; set; }
-    }
+		public string Version { get; set; }
+	}
 }

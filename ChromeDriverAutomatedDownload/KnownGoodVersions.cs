@@ -1,27 +1,21 @@
 ﻿using System.Text.Json.Serialization;
+using ChromeForTestingAutomatedDownload.DTOs;
 
 namespace ChromeForTestingAutomatedDownload
 {
-    public class KnownGoodVersions
-    {
-        public class ChromeVersionModel : IChromeVersionModel
-        {
-            public Func<Task<string>> QueryEndpointAsync { get; set; } = GoogleChromeLabsEndpointQueries.GetKnownGoodVersionsAsync;
+	public class KnownGoodVersions
+	{
+		public class ChromeVersionModel : IChromeVersionModel
+		{
 
-            [JsonPropertyName("versions")]
-            public List<VersionMetaData> Versions { get; set; } = new List<VersionMetaData>();
-                
-            [JsonPropertyName("timestamp")]
-            public DateTime TimeStamp { get; set; }
-        }
+			[JsonPropertyName("timestamp")]
+			public DateTime TimeStamp { get; set; }
 
-        public class VersionMetaData
-        {
-            [JsonPropertyName("version")]
-            public string Version { get; set; } = string.Empty;
+			[JsonPropertyName("versions")]
+			public List<VersionMetaData> Versions { get; set; } = new List<VersionMetaData>();
 
-            [JsonPropertyName("revision")]
-            public string Revision { get; set; } = string.Empty;
-        }
-    }
+			public Func<Task<string>> QueryEndpointAsync { get; set; } =
+				GoogleChromeLabsEndpointQueries.GetKnownGoodVersionsAsync;
+		}
+	}
 }

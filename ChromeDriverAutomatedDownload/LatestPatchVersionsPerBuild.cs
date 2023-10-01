@@ -1,28 +1,21 @@
 ﻿using System.Text.Json.Serialization;
+using ChromeForTestingAutomatedDownload.DTOs;
 
 namespace ChromeForTestingAutomatedDownload
 {
-    public class LatestPatchVersionsPerBuild
-    {
-        public class ChromeVersionModel : IChromeVersionModel
-        {
-            public Func<Task<string>> QueryEndpointAsync { get; set; } = GoogleChromeLabsEndpointQueries.GetLatestPatchVersionsPerBuildAsync;
+	public abstract class LatestPatchVersionsPerBuild
+	{
+		public class ChromeVersionModel : IChromeVersionModel
+		{
 
-            [JsonPropertyName("timestamp")]
-            public DateTime TimeStamp { get; set; }
+			[JsonPropertyName("builds")]
+			public Dictionary<string, Build> Builds { get; set; } = new Dictionary<string, Build>();
 
-            [JsonPropertyName("builds")]
-            public Dictionary<string, Build> Builds { get; set; } = new Dictionary<string, Build>();
-        }
+			[JsonPropertyName("timestamp")]
+			public DateTime TimeStamp { get; set; }
 
-        public class Build
-        {
-            [JsonPropertyName("version")]
-            public string Version { get; set; } = string.Empty;
-
-            [JsonPropertyName("revision")]
-            public string Revision { get; set; } = string.Empty;
-        }
-    }
+			public Func<Task<string>> QueryEndpointAsync { get; set; } =
+				GoogleChromeLabsEndpointQueries.GetLatestPatchVersionsPerBuildAsync;
+		}
+	}
 }
-

@@ -2,16 +2,21 @@
 
 namespace ChromeForTestingAutomatedDownload
 {
-    public static class ChromeVersionModelFactory
-    {
-        public static async Task<T> CreateChromeVersionModelAsync<T>() where T : IChromeVersionModel, new()
-        {
-            var response = await new T().QueryEndpointAsync();
+	public interface IChromeVersionModelFactory
+	{
+		Task<T> CreateInstanceAsync<T>() where T : IChromeVersionModel;
+	}
 
-            var deserializedObject = JsonSerializer.Deserialize<T>(response);
-            if (deserializedObject != null) return deserializedObject;
+	public class ChromeVersionModelFactory : IChromeVersionModelFactory
+	{
+		public async Task<T> CreateInstanceAsync<T>() where T : IChromeVersionModel
+		{
+			var instance = Activator.CreateInstance<T>();
+			var response = await instance.QueryEndpointAsync();
+			var deserializedObject = JsonSerializer.Deserialize<T>(response);
+			if (deserializedObject != null) return deserializedObject;
 
-            throw new JsonException("Failed to deserialize endpoint.");
-        }
-    }
+			throw new JsonException("Failed to deserialize endpoint.");
+		}
+	}
 }
