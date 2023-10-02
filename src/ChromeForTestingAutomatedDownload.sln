@@ -5,8 +5,6 @@ VisualStudioVersion = 17.7.34018.315
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeForTestingAutomatedDownload", "ChromeDriverAutomatedDownload\ChromeForTestingAutomatedDownload.csproj", "{CAD75A57-37AF-45D6-BC50-67C57B43210E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChromeForTestingAutoDownload.Tests", "ChromeForTestingAutoDownload.Tests\ChromeForTestingAutoDownload.Tests.csproj", "{5C8250C5-9D23-4431-A49D-D9C7AE577137}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,10 +15,6 @@ Global
 		{CAD75A57-37AF-45D6-BC50-67C57B43210E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CAD75A57-37AF-45D6-BC50-67C57B43210E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CAD75A57-37AF-45D6-BC50-67C57B43210E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5C8250C5-9D23-4431-A49D-D9C7AE577137}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5C8250C5-9D23-4431-A49D-D9C7AE577137}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5C8250C5-9D23-4431-A49D-D9C7AE577137}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5C8250C5-9D23-4431-A49D-D9C7AE577137}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
