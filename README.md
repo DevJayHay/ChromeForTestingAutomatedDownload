@@ -4,7 +4,8 @@
 
 # ChromeForTestingAutomatedDownload
 
-Support library that interfaces with the JSON endpoints included in https://github.com/GoogleChromeLabs/chrome-for-testing
+Support library that interfaces with the JSON endpoints included
+in https://github.com/GoogleChromeLabs/chrome-for-testing
 
 ### Chrome Version Models
 
@@ -37,6 +38,7 @@ public static class ChromeVersionModelFactory
 ### Example Usage
 
 #### Download the Latest Version of ChromeDriver that Matches the Major Release Version of Chrome Installed on the Machine (Win64 Only, WIP)
+
 ```csharp
 using ChromeForTestingAutomatedDownload;
 
@@ -44,6 +46,7 @@ await AutomatedDownload.DownloadChromeDriver();
 ```
 
 #### Get the URL of the Most Recent Asset
+
 ```csharp
 using ChromeForTestingAutomatedDownload;
 
@@ -56,6 +59,7 @@ Console.WriteLine(url);
 ```
 
 Get the URL of the Most Recent Asset by Major Release Number
+
 ```csharp
 using ChromeForTestingAutomatedDownload;
 
@@ -69,6 +73,7 @@ Console.WriteLine(url);
 ```
 
 #### Get a Specific Download URL by Filtering with LINQ
+
 ```csharp
 using ChromeForTestingAutomatedDownload;
 
@@ -88,6 +93,7 @@ Console.WriteLine(downloadURL);
 ```
 
 #### Get a List of Last Known Good Versions by Binary Type / Platform
+
 ```csharp
 using ChromeForTestingAutomatedDownload;
 
@@ -113,6 +119,7 @@ foreach (var url in chromeDriverURLs)
 ```
 
 #### Get a List of All Milestones Download URLs
+
 ```csharp
 using ChromeForTestingAutomatedDownload;
 
