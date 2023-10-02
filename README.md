@@ -1,3 +1,7 @@
+# This branch is a playground based on a fork of https://github.com/WilliamSmithEdward/ChromeForTestingAutomatedDownload
+
+# Please use https://github.com/WilliamSmithEdward/ChromeForTestingAutomatedDownload and not this branch.
+
 # ChromeForTestingAutomatedDownload
 
 Support library that interfaces with the JSON endpoints included in https://github.com/GoogleChromeLabs/chrome-for-testing
