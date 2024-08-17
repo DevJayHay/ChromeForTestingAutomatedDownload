@@ -4,8 +4,8 @@ namespace ChromeForTestingAutomatedDownload
 {
 	public class GoogleChromeLabsEndpointQueries
 	{
-		private readonly ILogger<GoogleChromeLabsEndpointQueries> _logger;
 		private static readonly HttpClient _httpClient = new HttpClient();
+		private readonly ILogger<GoogleChromeLabsEndpointQueries> _logger;
 
 		public GoogleChromeLabsEndpointQueries(ILogger<GoogleChromeLabsEndpointQueries> logger)
 		{

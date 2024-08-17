@@ -7,8 +7,8 @@ namespace ChromeForTestingAutomatedDownload
 	public class AssetList
 	{
 		private readonly IChromeVersionModelFactory _factory;
-		private readonly IVersion _version;
 		private readonly ILogger<AssetList> _logger;
+		private readonly IVersion _version;
 
 
 		public AssetList(IChromeVersionModelFactory factory, IVersion version, ILogger<AssetList> logger)
